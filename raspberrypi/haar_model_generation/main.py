@@ -1,12 +1,12 @@
-from itertools import count
 import requests
 from bs4 import BeautifulSoup
 import uuid
 from time import time
-from multiprocessing.pool import ThreadPool
 import cv2
 import os
 import threading
+import concurrent.futures
+
 
 # Pour l'instant 878 images, faut enlever celles qui sont déjà prises par contre...
 archive_url = [
@@ -55,22 +55,30 @@ def downloadImageAndProcess(link):
     cv2.imwrite(os.path.join(neg, fileName), resized_image)
 
 
+running = [1]
 shared_array = []
 
 wait_lock = threading.Semaphore(0)
 mutex = threading.Semaphore(1)
+main_thread_lock = threading.Semaphore(0)
 
 
-def threadFunc():
+def threadFunc(name):
     print(f"Thread {name} starting")
     while 1:
+        mutex.acquire()
         if len(shared_array) == 0:
+            mutex.release()
+            main_thread_lock.release()
             wait_lock.acquire()
         if running[0] == 0:
             break
+        link = shared_array.pop()
+        mutex.release()
+        downloadImageAndProcess(link)
 
 
-NUMBER_OF_THREADS = 10
+NUMBER_OF_THREADS = 5
 
 if __name__ == "__main__":
     # Setup
@@ -80,10 +88,18 @@ if __name__ == "__main__":
     # getting all video links
     for link in archive_url:
         imageLinks += getImageLinks(link)
-    print(len(imageLinks))
 
     # Saving all images (threaded)
+    shared_array += imageLinks
     start = time()
-    for link in imageLinks:
-        downloadImageAndProcess(link)
-    print(f"Time to download: {time() - start}")
+    with concurrent.futures.ThreadPoolExecutor(
+        max_workers=NUMBER_OF_THREADS
+    ) as executor:
+        executor.map(threadFunc, range(NUMBER_OF_THREADS))
+        main_thread_lock.acquire()
+        print(f"Time to download: {time() - start}")
+        running[0] = 0
+        for i in range(NUMBER_OF_THREADS):
+            wait_lock.release()
+
+    # Rest of the code...
