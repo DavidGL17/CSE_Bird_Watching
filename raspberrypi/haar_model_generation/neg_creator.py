@@ -10,13 +10,13 @@ import concurrent.futures
 
 # Pour l'instant 878 images, faut enlever celles qui sont déjà prises par contre...
 archive_url = [
-    "https://sites.tufts.edu/babybirds/region/western-birds/?chick_type=altricial"
-    # "https://sites.tufts.edu/babybirds/region/western-birds/page/2/?chick_type=altricial",
-    # "https://sites.tufts.edu/babybirds/region/western-birds/page/3/?chick_type=altricial",
-    # "https://sites.tufts.edu/babybirds/region/western-birds/page/4/?chick_type=altricial",
-    # "https://sites.tufts.edu/babybirds/region/western-birds/page/5/?chick_type=altricial",
-    # "https://sites.tufts.edu/babybirds/region/western-birds/page/6/?chick_type=altricial",
-    # "https://sites.tufts.edu/babybirds/region/western-birds/page/7/?chick_type=altricial",
+    "https://sites.tufts.edu/babybirds/region/western-birds/?chick_type=altricial",
+    "https://sites.tufts.edu/babybirds/region/western-birds/page/2/?chick_type=altricial",
+    "https://sites.tufts.edu/babybirds/region/western-birds/page/3/?chick_type=altricial",
+    "https://sites.tufts.edu/babybirds/region/western-birds/page/4/?chick_type=altricial",
+    "https://sites.tufts.edu/babybirds/region/western-birds/page/5/?chick_type=altricial",
+    "https://sites.tufts.edu/babybirds/region/western-birds/page/6/?chick_type=altricial",
+    "https://sites.tufts.edu/babybirds/region/western-birds/page/7/?chick_type=altricial",
 ]
 
 neg = "neg"
@@ -78,7 +78,22 @@ def threadFunc(name):
         downloadImageAndProcess(link)
 
 
-NUMBER_OF_THREADS = 5
+def createDescFile():
+    for file_type in [neg]:
+        for img in os.listdir(file_type):
+            if file_type == neg:
+                line = file_type + "/" + img + "\n"
+                with open("bg.txt", "a") as f:
+                    f.write(line)
+            elif file_type == "pos":
+                line = (
+                    file_type + "/" + img + " 1 0 0 50 50\n"
+                )  # 1 image, et 0 0 50 50 décrit les bords du carré qui contiennent l'objet (dans son cas c'est toute l'image, à adapter)
+                with open("info.dat", "a") as f:
+                    f.write(line)
+
+
+NUMBER_OF_THREADS = 7
 
 if __name__ == "__main__":
     # Setup
@@ -91,6 +106,7 @@ if __name__ == "__main__":
 
     # Saving all images (threaded)
     shared_array += imageLinks
+    print(f"Preparing to download {len(shared_array)} images...")
     start = time()
     with concurrent.futures.ThreadPoolExecutor(
         max_workers=NUMBER_OF_THREADS
@@ -102,4 +118,5 @@ if __name__ == "__main__":
         for i in range(NUMBER_OF_THREADS):
             wait_lock.release()
 
-    # Rest of the code...
+    # Creating negative images descritpion file
+    createDescFile()

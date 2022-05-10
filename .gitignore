@@ -1,2 +1,4 @@
 raspberrypi/env
 .vscode/
+raspberrypi/haar_model_generation/bg.txt
+raspberrypi/haar_model_generation/neg/
