@@ -85,12 +85,6 @@ def createDescFile():
                 line = file_type + "/" + img + "\n"
                 with open("bg.txt", "a") as f:
                     f.write(line)
-            elif file_type == "pos":
-                line = (
-                    file_type + "/" + img + " 1 0 0 50 50\n"
-                )  # 1 image, et 0 0 50 50 décrit les bords du carré qui contiennent l'objet (dans son cas c'est toute l'image, à adapter)
-                with open("info.dat", "a") as f:
-                    f.write(line)
 
 
 NUMBER_OF_THREADS = 7
