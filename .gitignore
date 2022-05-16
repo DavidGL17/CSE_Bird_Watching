@@ -2,3 +2,5 @@ raspberrypi/env
 .vscode/
 raspberrypi/haar_model_generation/bg.txt
 raspberrypi/haar_model_generation/neg/
+raspberrypi/haar_model_generation/info
+raspberrypi/haar_model_generation/positives.vec

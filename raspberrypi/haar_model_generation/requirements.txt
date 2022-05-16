@@ -1,5 +1,6 @@
 requests
 beautifulsoup4
-html5lib
+lxml
 uuid
 opencv-python
+google-search-results

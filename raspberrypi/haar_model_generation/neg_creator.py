@@ -5,38 +5,56 @@ from time import time
 import cv2
 import os
 import threading
+import re
+import json
 import concurrent.futures
+from serpapi import GoogleSearch
+import urllib.request
 
 
 # Pour l'instant 878 images, faut enlever celles qui sont déjà prises par contre...
-archive_url = [
-    "https://sites.tufts.edu/babybirds/region/western-birds/?chick_type=altricial",
-    "https://sites.tufts.edu/babybirds/region/western-birds/page/2/?chick_type=altricial",
-    "https://sites.tufts.edu/babybirds/region/western-birds/page/3/?chick_type=altricial",
-    "https://sites.tufts.edu/babybirds/region/western-birds/page/4/?chick_type=altricial",
-    "https://sites.tufts.edu/babybirds/region/western-birds/page/5/?chick_type=altricial",
-    "https://sites.tufts.edu/babybirds/region/western-birds/page/6/?chick_type=altricial",
-    "https://sites.tufts.edu/babybirds/region/western-birds/page/7/?chick_type=altricial",
-]
-
 neg = "neg"
 pos = "pos"
 IMAGE_DIMENSIONS = (100, 100)  # TODO CHANGER ça
 
 
-def getImageLinks(url):
-    # create response object
-    r = requests.get(url)
-    # create beautiful-soup object
-    soup = BeautifulSoup(r.content, "html5lib")
-    # find all links on web-page
-    links = soup.findAll("a")
-    # filter the link sending with .jpg ou jpeg (pas de png)
-    imageLinks = [
-        link["href"]
-        for link in links
-        if link["href"].endswith("jpeg") or link["href"].endswith("jpg")
+def getImageLinks(ijn):
+    imageLinks = []
+    params = {
+        "api_key": "a1e0d2dc9bcf21d0930c041bc5c76704ba24f612ab04e002870829a56f7a6efe",
+        "engine": "google",
+        "q": "bird nest empty",
+        "tbm": "isch",
+        "ijn": ijn,
+    }
+
+    search = GoogleSearch(params)
+    results = search.get_dict()
+
+    # print(json.dumps(results['suggested_searches'], indent=2, ensure_ascii=False))
+
+    # -----------------------
+    # Downloading images
+    opener = urllib.request.build_opener()
+    opener.addheaders = [
+        (
+            "User-Agent",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36 Edge/18.19582",
+        )
     ]
+    urllib.request.install_opener(opener)
+
+    for index, image in enumerate(results["images_results"]):
+        try:
+            print(f"image {index}...")
+            fileName = str(uuid.uuid1()) + ".jpg"
+            imageLinks.append(image["original"])
+            urllib.request.urlretrieve(image["original"], os.path.join(neg, fileName))
+            img = cv2.imread(os.path.join(neg, fileName), cv2.IMREAD_GRAYSCALE)
+            resized_image = cv2.resize(img, (100, 100))
+            cv2.imwrite(os.path.join(neg, fileName), resized_image)
+        except:
+            continue
 
     return imageLinks
 
@@ -44,12 +62,15 @@ def getImageLinks(url):
 def downloadImageAndProcess(link):
     fileEnding = link.split(".")[-1]
     fileName = str(uuid.uuid1()) + "." + fileEnding
-    # create response object
-    r = requests.get(link, stream=True)
-    # download started
-    with open(os.path.join(neg, fileName), "wb") as f:
-        for chunk in r:
-            f.write(chunk)
+    opener = urllib.request.build_opener()
+    opener.addheaders = [
+        (
+            "User-Agent",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36 Edge/18.19582",
+        )
+    ]
+    urllib.request.install_opener(opener)
+    urllib.request.urlretrieve(link, os.path.join(neg, fileName))
     img = cv2.imread(os.path.join(neg, fileName), cv2.IMREAD_GRAYSCALE)
     resized_image = cv2.resize(img, (100, 100))
     cv2.imwrite(os.path.join(neg, fileName), resized_image)
@@ -73,6 +94,7 @@ def threadFunc(name):
             wait_lock.acquire()
         if running[0] == 0:
             break
+        print(len(shared_array))
         link = shared_array.pop()
         mutex.release()
         downloadImageAndProcess(link)
@@ -91,26 +113,28 @@ NUMBER_OF_THREADS = 7
 
 if __name__ == "__main__":
     # Setup
-    os.makedirs(neg, exist_ok=True)
-    imageLinks = []
+    # os.makedirs(neg, exist_ok=True)
+    # imageLinks = []
 
-    # getting all video links
-    for link in archive_url:
-        imageLinks += getImageLinks(link)
+    # # getting all video links
+    # start = time()
+    # for ijn in range(6):
+    #     getImageLinks(str(ijn))
+    # print(f"Time to download: {time() - start}")
 
     # Saving all images (threaded)
-    shared_array += imageLinks
-    print(f"Preparing to download {len(shared_array)} images...")
-    start = time()
-    with concurrent.futures.ThreadPoolExecutor(
-        max_workers=NUMBER_OF_THREADS
-    ) as executor:
-        executor.map(threadFunc, range(NUMBER_OF_THREADS))
-        main_thread_lock.acquire()
-        print(f"Time to download: {time() - start}")
-        running[0] = 0
-        for i in range(NUMBER_OF_THREADS):
-            wait_lock.release()
+    # shared_array += imageLinks
+    # print(f"Preparing to download {len(shared_array)} images...")
+    # start = time()
+    # with concurrent.futures.ThreadPoolExecutor(
+    #     max_workers=NUMBER_OF_THREADS
+    # ) as executor:
+    #     executor.map(threadFunc, range(NUMBER_OF_THREADS))
+    #     main_thread_lock.acquire()
+    #     print(f"Time to download: {time() - start}")
+    #     running[0] = 0
+    #     for i in range(NUMBER_OF_THREADS):
+    #         wait_lock.release()
 
     # Creating negative images descritpion file
     createDescFile()
