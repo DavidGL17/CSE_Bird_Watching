@@ -15,7 +15,7 @@ import urllib.request
 # Pour l'instant 878 images, faut enlever celles qui sont déjà prises par contre...
 neg = "neg"
 pos = "pos"
-IMAGE_DIMENSIONS = (100, 100)  # TODO CHANGER ça
+IMAGE_DIMENSIONS = (500, 500)  # TODO CHANGER ça
 
 
 def getImageLinks(ijn):
@@ -51,7 +51,7 @@ def getImageLinks(ijn):
             imageLinks.append(image["original"])
             urllib.request.urlretrieve(image["original"], os.path.join(neg, fileName))
             img = cv2.imread(os.path.join(neg, fileName), cv2.IMREAD_GRAYSCALE)
-            resized_image = cv2.resize(img, (100, 100))
+            resized_image = cv2.resize(img, IMAGE_DIMENSIONS)
             cv2.imwrite(os.path.join(neg, fileName), resized_image)
         except:
             continue
@@ -72,7 +72,7 @@ def downloadImageAndProcess(link):
     urllib.request.install_opener(opener)
     urllib.request.urlretrieve(link, os.path.join(neg, fileName))
     img = cv2.imread(os.path.join(neg, fileName), cv2.IMREAD_GRAYSCALE)
-    resized_image = cv2.resize(img, (100, 100))
+    resized_image = cv2.resize(img, IMAGE_DIMENSIONS)
     cv2.imwrite(os.path.join(neg, fileName), resized_image)
 
 
@@ -109,18 +109,22 @@ def createDescFile():
                     f.write(line)
 
 
+def duplicateAndprocessImages():
+    images = ["1.jpg", "2.jpg", "3.jpg", "4.jpg", "5.jpg"]
+    for img_ref in images:
+        print(f"doing image {img_ref}")
+        ref_img = cv2.imread(os.path.join("ref", img_ref))
+        resized_image = cv2.resize(ref_img, IMAGE_DIMENSIONS)
+        img_name = img_ref.split(".")[0]
+        file_ending = img_ref.split(".")[-1]
+        for i in range(200):
+            final_path = f"{img_name}-{i}.{file_ending}"
+            cv2.imwrite(os.path.join("neg", final_path), resized_image)
+
+
 NUMBER_OF_THREADS = 7
 
 if __name__ == "__main__":
-    # Setup
-    # os.makedirs(neg, exist_ok=True)
-    # imageLinks = []
-
-    # # getting all video links
-    # start = time()
-    # for ijn in range(6):
-    #     getImageLinks(str(ijn))
-    # print(f"Time to download: {time() - start}")
 
     # Saving all images (threaded)
     # shared_array += imageLinks
@@ -136,5 +140,16 @@ if __name__ == "__main__":
     #     for i in range(NUMBER_OF_THREADS):
     #         wait_lock.release()
 
+    # Setup
+    os.makedirs(neg, exist_ok=True)
+    # # getting all video links
+    # # start = time()
+    # # for ijn in range(6):
+    # #     getImageLinks(str(ijn))
+    # # print(f"Time to download: {time() - start}")
     # Creating negative images descritpion file
+    duplicateAndprocessImages()
     createDescFile()
+    # img = cv2.imread("bird5100100.jpg", cv2.IMREAD_ANYCOLOR)
+    # resized_image = cv2.resize(img, (50, 50))
+    # cv2.imwrite("bird5100100.jpg", resized_image)
