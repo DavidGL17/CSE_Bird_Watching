@@ -4,3 +4,4 @@ lxml
 uuid
 opencv-python
 google-search-results
+imutils

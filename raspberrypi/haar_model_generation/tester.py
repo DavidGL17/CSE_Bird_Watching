@@ -1,4 +1,5 @@
 import cv2
+import imutils
 
 
 class DetectBirds(object):
@@ -14,11 +15,15 @@ class DetectBirds(object):
             ret, frame = self.cap.read()
             if ret:
                 # convert the frame into gray scale for better analysis
-                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                gray = cv2.resize(gray, (500, 500))
+                dim = 1200
+                blur_kernel = (5, 5)
+                resized = imutils.resize(frame, width=dim)
+                gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
+                blur = cv2.GaussianBlur(gray, blur_kernel, 0)
+                closed = cv2.morphologyEx(blur, cv2.MORPH_CLOSE, (3, 3))
                 # Detect birds in the gray scale image
                 birds = self.birdsCascade.detectMultiScale(
-                    gray,
+                    closed,
                     scaleFactor=1.4,
                     minNeighbors=50,
                     # minSize=(10, 10),
@@ -49,5 +54,5 @@ class DetectBirds(object):
 
 
 if __name__ == "__main__":
-    D = DetectBirds("birds2.mp4")
+    D = DetectBirds("birds.mp4")
     D.detect()

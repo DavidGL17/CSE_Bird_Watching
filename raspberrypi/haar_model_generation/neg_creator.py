@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import uuid
 from time import time
 import cv2
+import imutils
 import os
 import threading
 import re
@@ -14,7 +15,7 @@ import urllib.request
 
 # Pour l'instant 878 images, faut enlever celles qui sont déjà prises par contre...
 neg = "neg"
-pos = "pos"
+pos = "info"
 IMAGE_DIMENSIONS = (500, 500)  # TODO CHANGER ça
 
 
@@ -122,6 +123,24 @@ def duplicateAndprocessImages():
             cv2.imwrite(os.path.join("neg", final_path), resized_image)
 
 
+def applyFilterToImages():
+    dim = 1200
+    blur_kernel = (5, 5)
+    canny_thr1 = 20
+    canny_thr2 = 150
+    canny_aperture = 3
+    for file_type in [neg, pos]:
+        print(f"Doing {file_type}...")
+        for img in os.listdir(file_type):
+            if img == "info.lst":
+                continue
+            frame = cv2.imread(os.path.join(file_type, img), cv2.IMREAD_GRAYSCALE)
+            resized = imutils.resize(frame, width=dim)
+            blur = cv2.GaussianBlur(resized, blur_kernel, 0)
+            closed = cv2.morphologyEx(blur, cv2.MORPH_CLOSE, (3, 3))
+            cv2.imwrite(os.path.join(file_type, img), closed)
+
+
 NUMBER_OF_THREADS = 7
 
 if __name__ == "__main__":
@@ -142,14 +161,22 @@ if __name__ == "__main__":
 
     # Setup
     os.makedirs(neg, exist_ok=True)
-    # # getting all video links
-    # # start = time()
-    # # for ijn in range(6):
-    # #     getImageLinks(str(ijn))
-    # # print(f"Time to download: {time() - start}")
+    os.makedirs("info", exist_ok=True)
+    os.makedirs("data", exist_ok=True)
+    # # # getting all video links
+    # # # start = time()
+    # # # for ijn in range(6):
+    # # #     getImageLinks(str(ijn))
+    # # # print(f"Time to download: {time() - start}")
     # Creating negative images descritpion file
     duplicateAndprocessImages()
     createDescFile()
+    # Create positives
+    output = os.system(
+        "opencv_createsamples -img bird5100100.jpg -bg bg.txt -info info/info.lst -pngoutput info -maxxangle 0.5 -maxyangle -0.5 -maxzangle 0.5 -num 900"
+    )
+    print("Applying filter...")
+    applyFilterToImages()
     # img = cv2.imread("bird5100100.jpg", cv2.IMREAD_ANYCOLOR)
     # resized_image = cv2.resize(img, (50, 50))
     # cv2.imwrite("bird5100100.jpg", resized_image)
