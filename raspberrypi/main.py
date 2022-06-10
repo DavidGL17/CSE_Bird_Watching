@@ -52,26 +52,27 @@ def getPicture(ipAddr):
    driver = webdriver.Chrome('/usr/lib/chromium-browser/chromedriver')   
    driver.get(ipAddr)
    # click on capture
-   button_element = driver.find_element(id='capture')
+   button_element = driver.find_element_by_id('capture')
    button_element.click()
    # wait 4 sec
    sleep(4)
    # click refresh
-   button_element = driver.find_element(id='reload')
+   button_element = driver.find_element_by_id('reload')
    button_element.click()
+   sleep(2)
    # récupérer la photo
    response = requests.get(ipAddr)
    soup = BeautifulSoup(response.text, "html.parser")
    link = soup.findAll(id='photo')[0] 
-   imageTag = link.findChildren("img")
-   imageSrc = imageTag[0]["src"]
-   response = requests.get(imageSrc, stream=True)
-   realName = "latest"
+   imageSrc = link[0]["src"]
+   response = requests.get(ipAddr+"/"+imageSrc, stream=True)
+   realName = "latest.jpg"
    
    file = open(realName, 'wb')
    response.raw.decode_content = True
    shutil.copyfileobj(response.raw, file)
    del response
+   driver.quit()
    display.stop()
 
 # Détecte le nombre d'oiseaux présents sur l'image
