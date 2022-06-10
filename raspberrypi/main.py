@@ -3,6 +3,11 @@ import enum
 import os
 from time import sleep
 import json
+from selenium import webdriver
+from bs4 import BeautifulSoup
+import requests
+import urllib.request
+import shutil
 
 STATE_FILE_NAME = "state.json"
 EMPTY_NEST_WAIT_TIME = 600 # seconds
@@ -37,19 +42,40 @@ def readFromFile():
       doc = json.load(file)
    state = CurrentState(doc["state"], doc["eggNumber"])
    return state
+
 # Récupère l'image du esp
-def getPicture():
-   pass
+def getPicture(ipAddr):
+   driver = webdriver.Firefox()
+   driver.get(ipAddr)
+   # click on capture
+   button_element = driver.find_element_by_id('capture')
+   button_element.click()
+   # wait 4 sec
+   sleep(4)
+   # click refresh
+   button_element = driver.find_element_by_id('reload')
+   button_element.click()
+   # récupérer la photo
+   response = requests.get(ipAddr)
+   soup = BeautifulSoup(response.text, "html.parser")
+   link = soup.findAll(id='photo') 
+   print(link)
 
 # Détecte le nombre d'oiseaux présents sur l'image
 # Retourne un bool pour savoir si c'est des oiseaux, un bool pour si c'est des oeufs et le nombre d'oiseaux/oeuf
 def birdDetection(image):
    pass
 
+# Envoyer le mail de prévention
+def sendMail():
+   pass
+
 if __name__ == "__main__":
    # General variables
    currentState = CurrentState(States.Init, 0)
 
+   getPicture("192.168.4.7")
+   exit(0)
    if (os.path.exists(STATE_FILE_NAME)):
       currentState = readFromFile()
    if currentState.state != States.SendMail:
@@ -86,14 +112,14 @@ if __name__ == "__main__":
             elif (number > currentState.eggNumber):
                currentState.eggNumber = number
       elif currentState.state == States.Chicks:
-         saveToFile(currentState.state, currentState.eggNumber)
+         saveToFile(currentState)
          pass
       elif currentState.state == States.FirstFall:
-         saveToFile(currentState.state, currentState.eggNumber)
+         saveToFile(currentState)
          pass
       elif currentState.state == States.SendMail:
-         saveToFile(currentState.state, currentState.eggNumber)
+         saveToFile(currentState)
          pass
       elif currentState.state == States.WaitForEmpty:
-         saveToFile(currentState.state, currentState.eggNumber)
+         saveToFile(currentState)
          pass
