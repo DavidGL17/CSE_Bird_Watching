@@ -2,6 +2,7 @@
 import enum
 import os
 from time import sleep
+import json
 
 STATE_FILE_NAME = "state.json"
 EMPTY_NEST_WAIT_TIME = 600 # seconds
@@ -19,10 +20,23 @@ class States(enum.Enum):
    SendMail = 5
    WaitForEmpty = 6
 
-# Sauvegarde l'état et autres variables nécessaires dans le fichier d'état
-def saveToFile(state, eggNumber):
-   pass
+class CurrentState:
+   def __init__(self, state : States, eggNumber : int):
+      self.state = state
+      self.eggNumber = eggNumber
 
+# Sauvegarde l'état et autres variables nécessaires dans le fichier d'état
+def saveToFile(currentState):
+   jsonStr = json.dumps(currentState.__dict__)
+   with open(STATE_FILE_NAME, "w") as i:
+      json.dump(jsonStr, i)
+
+# Return a current state element
+def readFromFile():
+   with open("text_data.json", mode="r") as file:
+      doc = json.load(file)
+   state = CurrentState(doc["state"], doc["eggNumber"])
+   return state
 # Récupère l'image du esp
 def getPicture():
    pass
@@ -34,50 +48,52 @@ def birdDetection(image):
 
 if __name__ == "__main__":
    # General variables
-   state = States.Init
-   eggNumber = 0
+   currentState = CurrentState(States.Init, 0)
 
    if (os.path.exists(STATE_FILE_NAME)):
-      # Lire dans le fichier et prendre l'état actuel
+      currentState = readFromFile()
+   if currentState.state != States.SendMail:
       pass
-   
+      # get ip address of esp
+
+
    while True:
-      if state == States.Init:
-         saveToFile(state, eggNumber)
+      if currentState.state == States.Init:
+         saveToFile(currentState)
          # Initialiser le reste des composants (thread?)
-         state = States.EmptyNest
-      elif state == States.EmptyNest:
-         saveToFile(state, eggNumber)
+         currentState.state = States.EmptyNest
+      elif currentState.state == States.EmptyNest:
+         saveToFile(currentState)
          while True:
             # Analyser les images et attendre qu'on détecte un oeuf
             sleep(EMPTY_NEST_WAIT_TIME)
             image = getPicture()
             isBird, isEggs, number = birdDetection(image)
             if (isEggs and number > 0):
-               state = States.Eggs
-               eggNumber = number
+               currentState.state = States.Eggs
+               currentState.eggNumber = number
                break
-      elif state == States.Eggs:
-         saveToFile(state, eggNumber)
+      elif currentState.state == States.Eggs:
+         saveToFile(currentState)
          while True:
             # Analyser les images et attendre qu'on détecte un oeuf
             sleep(EGGS_WAIT_TIME)
             image = getPicture()
             isBird, isEggs, number = birdDetection(image)
             if (isBird & number >1): # Quand un oisillon éclot (> 1 pour éviter de détecter la mère)
-               state = States.Chicks
+               currentState.state = States.Chicks
                break
-            elif (number > eggNumber):
-               eggNumber = number
-      elif state == States.Chicks:
-         saveToFile(state, eggNumber)
+            elif (number > currentState.eggNumber):
+               currentState.eggNumber = number
+      elif currentState.state == States.Chicks:
+         saveToFile(currentState.state, currentState.eggNumber)
          pass
-      elif state == States.FirstFall:
-         saveToFile(state, eggNumber)
+      elif currentState.state == States.FirstFall:
+         saveToFile(currentState.state, currentState.eggNumber)
          pass
-      elif state == States.SendMail:
-         saveToFile(state, eggNumber)
+      elif currentState.state == States.SendMail:
+         saveToFile(currentState.state, currentState.eggNumber)
          pass
-      elif state == States.WaitForEmpty:
-         saveToFile(state, eggNumber)
+      elif currentState.state == States.WaitForEmpty:
+         saveToFile(currentState.state, currentState.eggNumber)
          pass

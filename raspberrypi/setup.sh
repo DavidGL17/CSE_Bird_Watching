@@ -1,6 +1,6 @@
 sudo apt-get update
 sudo apt-get upgrade
-sudo apt-get install -y dnsmasq hostapd git
+sudo apt-get install -y dnsmasq hostapd git nmap wget
 echo "starting hotspot activation..."
 sudo systemctl stop dnsmasq
 sudo systemctl stop hostapd
