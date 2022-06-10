@@ -1,5 +1,6 @@
 # Main file with the state machine 
 import enum
+from http.client import LineTooLong
 import os
 from time import sleep
 import json
@@ -48,21 +49,30 @@ def readFromFile():
 def getPicture(ipAddr):
    display = Display(visible=0, size=(800, 600))
    display.start()
-   driver = webdriver.Chrome(executable_path = '/usr/lib/chromium-browser/chromium-browser')   
+   driver = webdriver.Chrome('/usr/lib/chromium-browser/chromedriver')   
    driver.get(ipAddr)
    # click on capture
-   button_element = driver.find_element_by_id('capture')
+   button_element = driver.find_element(id='capture')
    button_element.click()
    # wait 4 sec
    sleep(4)
    # click refresh
-   button_element = driver.find_element_by_id('reload')
+   button_element = driver.find_element(id='reload')
    button_element.click()
    # récupérer la photo
    response = requests.get(ipAddr)
    soup = BeautifulSoup(response.text, "html.parser")
-   link = soup.findAll(id='photo') 
-   print(link)
+   link = soup.findAll(id='photo')[0] 
+   imageTag = link.findChildren("img")
+   imageSrc = imageTag[0]["src"]
+   response = requests.get(imageSrc, stream=True)
+   realName = "latest"
+   
+   file = open(realName, 'wb')
+   response.raw.decode_content = True
+   shutil.copyfileobj(response.raw, file)
+   del response
+   display.stop()
 
 # Détecte le nombre d'oiseaux présents sur l'image
 # Retourne un bool pour savoir si c'est des oiseaux, un bool pour si c'est des oeufs et le nombre d'oiseaux/oeuf
@@ -77,7 +87,7 @@ if __name__ == "__main__":
    # General variables
    currentState = CurrentState(States.Init, 0)
 
-   getPicture("192.168.4.7")
+   getPicture("http://192.168.4.7")
    exit(0)
    if (os.path.exists(STATE_FILE_NAME)):
       currentState = readFromFile()
