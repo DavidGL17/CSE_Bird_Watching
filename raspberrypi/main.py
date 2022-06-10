@@ -6,6 +6,7 @@ import json
 from selenium import webdriver
 from bs4 import BeautifulSoup
 import requests
+from pyvirtualdisplay import Display
 import urllib.request
 import shutil
 
@@ -45,6 +46,8 @@ def readFromFile():
 
 # Récupère l'image du esp
 def getPicture(ipAddr):
+   display = Display(visible=0, size=(800, 600))
+   display.start()
    driver = webdriver.Chrome(executable_path = '/usr/lib/chromium-browser/chromium-browser')   
    driver.get(ipAddr)
    # click on capture
