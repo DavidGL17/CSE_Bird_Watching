@@ -45,7 +45,7 @@ def readFromFile():
 
 # Récupère l'image du esp
 def getPicture(ipAddr):
-   driver = webdriver.Firefox()
+   driver = webdriver.Chrome
    driver.get(ipAddr)
    # click on capture
    button_element = driver.find_element_by_id('capture')

@@ -1,6 +1,7 @@
 sudo apt-get update
 sudo apt-get upgrade
-sudo apt-get install -y dnsmasq hostapd git nmap python3-pip
+sudo apt-get install -y dnsmasq hostapd git nmap python3-pip chromium-chromedriver
+pip install -r requirements.txt
 echo "starting hotspot activation..."
 sudo systemctl stop dnsmasq
 sudo systemctl stop hostapd
