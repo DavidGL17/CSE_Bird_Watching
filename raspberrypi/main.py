@@ -1,5 +1,5 @@
 # Main file with the state machine 
-from asyncio import subprocess
+import subprocess
 import datetime
 import enum
 from http.client import LineTooLong
@@ -34,6 +34,7 @@ class CurrentState:
    def __init__(self, state : States, eggNumber : int):
       self.state = state
       self.eggNumber = eggNumber
+      self.espIpAddr = ""
 
 # Sauvegarde l'état et autres variables nécessaires dans le fichier d'état
 def saveToFile(currentState):
@@ -67,7 +68,7 @@ def getPicture(ipAddr):
    response = requests.get(ipAddr)
    soup = BeautifulSoup(response.text, "html.parser")
    link = soup.findAll(id='photo')[0] 
-   imageSrc = link[0]["src"]
+   imageSrc = link["src"]
    response = requests.get(ipAddr+"/"+imageSrc, stream=True)
    realName = "latest.jpg"
    
@@ -93,22 +94,29 @@ def sendMail():
 if __name__ == "__main__":
    # General variables
    currentState = CurrentState(States.Init, 0)
-   result = subprocess.run(["nmap", "-sn","-v","192.168.4.0/24"])
-   print(result)
-   exit(0)
+   
 
    os.makedirs(PICTURE_FOLDER, exist_ok=True)
    if (os.path.exists(STATE_FILE_NAME)):
       currentState = readFromFile()
    if currentState.state != States.SendMail:
-      result = subprocess.run(["nmap", "-sn","-v","192.168.4.0/24"])
-      print(result)
+      output = subprocess.check_output(["nmap", "-sn","-v","192.168.4.0/24"])
+      ipAddr = ""
+      lines = output.decode().splitlines()
+      for line in lines:
+         if "esp" in line:
+            res = line.split('(')[1]
+            ipAddr = res[:-1]
+            break
+      ipAddr = "http://"+ipAddr
+      currentState.espIpAddr = ipAddr
       # get ip address of esp
 
 
    while True:
       if currentState.state == States.Init:
          saveToFile(currentState)
+         exit(0)
          # Initialiser le reste des composants (thread?)
          currentState.state = States.EmptyNest
       elif currentState.state == States.EmptyNest:
