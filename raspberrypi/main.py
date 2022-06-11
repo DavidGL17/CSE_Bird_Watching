@@ -152,6 +152,7 @@ def demo(currentState: CurrentState):
       input("Press a button to start")
       print("Taking picture...")
       getPicture(currentState.espIpAddr)
+      input("Waiting to show image... Press button to continue")
       currentState.state = States.SendMail
       saveToFile(currentState)
       deactivateHotspot()
