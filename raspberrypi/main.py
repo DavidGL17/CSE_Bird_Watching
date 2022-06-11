@@ -1,4 +1,6 @@
 # Main file with the state machine 
+from asyncio import subprocess
+import datetime
 import enum
 from http.client import LineTooLong
 import os
@@ -11,6 +13,7 @@ from pyvirtualdisplay import Display
 import urllib.request
 import shutil
 
+PICTURE_FOLDER = "img"
 STATE_FILE_NAME = "state.json"
 EMPTY_NEST_WAIT_TIME = 600 # seconds
 EGGS_WAIT_TIME = 300 # seconds
@@ -68,8 +71,11 @@ def getPicture(ipAddr):
    response = requests.get(ipAddr+"/"+imageSrc, stream=True)
    realName = "latest.jpg"
    
-   file = open(realName, 'wb')
+   file = open(os.path.join(PICTURE_FOLDER,realName), 'wb')
    response.raw.decode_content = True
+   shutil.copyfileobj(response.raw, file)
+   fileName = datetime.datetime.now
+   file = open(os.path.join(PICTURE_FOLDER,fileName), 'wb')
    shutil.copyfileobj(response.raw, file)
    del response
    driver.quit()
@@ -87,13 +93,16 @@ def sendMail():
 if __name__ == "__main__":
    # General variables
    currentState = CurrentState(States.Init, 0)
-
-   getPicture("http://192.168.4.7")
+   result = subprocess.run(["nmap", "-sn","-v","192.168.4.0/24"])
+   print(result)
    exit(0)
+
+   os.makedirs(PICTURE_FOLDER, exist_ok=True)
    if (os.path.exists(STATE_FILE_NAME)):
       currentState = readFromFile()
    if currentState.state != States.SendMail:
-      pass
+      result = subprocess.run(["nmap", "-sn","-v","192.168.4.0/24"])
+      print(result)
       # get ip address of esp
 
 
