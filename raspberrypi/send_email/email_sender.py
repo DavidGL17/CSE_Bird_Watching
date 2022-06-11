@@ -2,7 +2,6 @@ import smtplib
 
 # TODO mettre les bons parametres encore (message, objets, adresses...)
 def sendEmail():
-
     sender = 'cse.birds@outlook.com'
     receivers = ['cse.birds@outlook.com']
 

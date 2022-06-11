@@ -1,5 +1,6 @@
 # Main file with the state machine 
 from fileinput import filename
+from re import sub
 import subprocess
 import datetime
 import enum
@@ -11,6 +12,7 @@ from bs4 import BeautifulSoup
 import requests
 from pyvirtualdisplay import Display
 import shutil
+import smtplib
 import cv2
 
 PICTURE_FOLDER = "caddy/site"
@@ -31,14 +33,15 @@ class States(enum.Enum):
    WaitForEmpty = 6
 
 class CurrentState:
-   def __init__(self, state : States, eggNumber : int):
+   def __init__(self, state : States, eggNumber : int, chickNumber : int):
       self.state = state
       self.eggNumber = eggNumber
+      self.chickNumber = chickNumber
       self.espIpAddr = ""
 
 # Sauvegarde l'état et autres variables nécessaires dans le fichier d'état
 def saveToFile(currentState: CurrentState):
-   dict = {"state": currentState.state.value, "eggNumber" : currentState.eggNumber}
+   dict = {"state": currentState.state.value, "eggNumber" : currentState.eggNumber, "chickNumber" : currentState.chickNumber}
    with open(STATE_FILE_NAME, "w") as i:
       json.dump(dict, i)
 
@@ -47,7 +50,7 @@ def readFromFile():
    with open(STATE_FILE_NAME, mode="r") as file:
       doc = json.load(file)
    print(type(doc))
-   state = CurrentState(States(doc["state"]), doc["eggNumber"])
+   state = CurrentState(States(doc["state"]), doc["eggNumber"], doc["chickNumber"])
    return state
 
 # Récupère l'image du esp
@@ -93,7 +96,34 @@ def birdDetection(image): # image est le path vers l'image
 
 # Envoyer le mail de notification
 def sendMail():
-   pass
+   sender = 'cse.birds@outlook.com'
+   receivers = ['cse.birds@outlook.com']
+
+   #smtp
+   smtpHost = 'smtp.office365.com'
+   smtpPort = 587
+   password = "framboise$1234" 
+   subject = "Notification de surveillance du Nid"
+
+   # Add the From: and To: headers at the start!
+   message = ("From: %s\r\nTo: %s\r\nSubject: %s\r\n\r\n"
+         % (sender, ", ".join(receivers), subject))
+   message += """Bonjour\r\nVotre premier oiseau est sorti du nid."""
+
+   print (message)
+
+   try:
+      smtpObj = smtplib.SMTP(smtpHost, smtpPort)
+      #smtpObj.set_debuglevel(1)
+      smtpObj.ehlo()
+      smtpObj.starttls()
+      smtpObj.ehlo()    
+      smtpObj.login(sender,password)
+      smtpObj.sendmail(sender, receivers, message)
+      smtpObj.quit()
+      print ("Successfully sent email")
+   except smtplib.SMTPException:
+      print ("Error: unable to send email")
 
 if __name__ == "__main__":
    # General variables
@@ -104,7 +134,7 @@ if __name__ == "__main__":
    if (os.path.exists(STATE_FILE_NAME)):
       currentState = readFromFile()
       print(currentState)
-   if currentState.state != States.SendMail:
+   if currentState.state != States.Init:
       foundIt = False
       while not foundIt:
          print("Trying to get esp...")
@@ -119,10 +149,6 @@ if __name__ == "__main__":
                currentState.espIpAddr = ipAddr
                foundIt = True
                break
-         # get ip address of esp
-
-   getPicture(currentState.espIpAddr)
-   exit(0)
 
    while True:
       if currentState.state == States.Init:
@@ -155,13 +181,33 @@ if __name__ == "__main__":
                currentState.eggNumber = number
       elif currentState.state == States.Chicks:
          saveToFile(currentState)
-         pass
+         while True:
+            # Analyser les images et attendre qu'on détecte un oeuf
+            sleep(CHICKS_WAIT_TIME)
+            image = getPicture(currentState.espIpAddr)
+            isBird, isEggs, number = birdDetection(image)
+            if (isBird & number < currentState.chickNumber): # Quand un oisillon éclot (> 1 pour éviter de détecter la mère)
+               currentState.state = States.FirstFall 
+               break
+            elif (number > currentState.chickNumber):
+               currentState.chickNumber = number
       elif currentState.state == States.FirstFall:
          saveToFile(currentState)
-         pass
+         currentState.state = States.SendMail
+         saveToFile(currentState)
+         subprocess.run("hotspot_deactivate")
       elif currentState.state == States.SendMail:
          saveToFile(currentState)
-         pass
+         sendMail()
+         subprocess.run("hotspot_activate")
+         currentState.state = States.WaitForEmpty
       elif currentState.state == States.WaitForEmpty:
          saveToFile(currentState)
-         pass
+         while True:
+            # Analyser les images et attendre qu'on détecte un oeuf
+            sleep(WAIT_FOR_EMPTY_WAIT_TIME)
+            image = getPicture(currentState.espIpAddr)
+            isBird, isEggs, number = birdDetection(image)
+            if (isBird & number == 0): # Quand un oisillon éclot (> 1 pour éviter de détecter la mère)
+               currentState.state = States.EmptyNest
+               break
