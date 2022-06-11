@@ -2,18 +2,18 @@
 import subprocess
 import datetime
 import enum
-from http.client import LineTooLong
 import os
 from time import sleep
 import json
+from turtle import circle
 from selenium import webdriver
 from bs4 import BeautifulSoup
 import requests
 from pyvirtualdisplay import Display
-import urllib.request
 import shutil
+import cv2
 
-PICTURE_FOLDER = "img"
+PICTURE_FOLDER = "caddy/site"
 STATE_FILE_NAME = "state.json"
 EMPTY_NEST_WAIT_TIME = 600 # seconds
 EGGS_WAIT_TIME = 300 # seconds
@@ -37,16 +37,17 @@ class CurrentState:
       self.espIpAddr = ""
 
 # Sauvegarde l'état et autres variables nécessaires dans le fichier d'état
-def saveToFile(currentState):
-   jsonStr = json.dumps(currentState.__dict__)
+def saveToFile(currentState: CurrentState):
+   dict = {"state": currentState.state.value, "eggNumber" : currentState.eggNumber}
    with open(STATE_FILE_NAME, "w") as i:
-      json.dump(jsonStr, i)
+      json.dump(dict, i)
 
 # Return a current state element
 def readFromFile():
-   with open("text_data.json", mode="r") as file:
+   with open(STATE_FILE_NAME, mode="r") as file:
       doc = json.load(file)
-   state = CurrentState(doc["state"], doc["eggNumber"])
+   print(type(doc))
+   state = CurrentState(States(doc["state"]), doc["eggNumber"])
    return state
 
 # Récupère l'image du esp
@@ -81,13 +82,15 @@ def getPicture(ipAddr):
    del response
    driver.quit()
    display.stop()
+   return os.path.join(PICTURE_FOLDER, fileName)
+
 
 # Détecte le nombre d'oiseaux présents sur l'image
 # Retourne un bool pour savoir si c'est des oiseaux, un bool pour si c'est des oeufs et le nombre d'oiseaux/oeuf
-def birdDetection(image):
+def birdDetection(image): # image est le path vers l'image
    pass
 
-# Envoyer le mail de prévention
+# Envoyer le mail de notification
 def sendMail():
    pass
 
@@ -99,19 +102,26 @@ if __name__ == "__main__":
    os.makedirs(PICTURE_FOLDER, exist_ok=True)
    if (os.path.exists(STATE_FILE_NAME)):
       currentState = readFromFile()
+      print(currentState)
    if currentState.state != States.SendMail:
-      output = subprocess.check_output(["nmap", "-sn","-v","192.168.4.0/24"])
-      ipAddr = ""
-      lines = output.decode().splitlines()
-      for line in lines:
-         if "esp" in line:
-            res = line.split('(')[1]
-            ipAddr = res[:-1]
-            break
-      ipAddr = "http://"+ipAddr
-      currentState.espIpAddr = ipAddr
-      # get ip address of esp
+      foundIt = False
+      while not foundIt:
+         print("Trying to get esp...")
+         output = subprocess.check_output(["nmap", "-sn","-v","192.168.4.0/24"])
+         ipAddr = ""
+         lines = output.decode().splitlines()
+         for line in lines:
+            if "esp" in line:
+               res = line.split('(')[1]
+               ipAddr = res[:-1]
+               ipAddr = "http://"+ipAddr
+               currentState.espIpAddr = ipAddr
+               foundIt = True
+               break
+         # get ip address of esp
 
+   getPicture(currentState.espIpAddr)
+   exit(0)
 
    while True:
       if currentState.state == States.Init:
@@ -124,7 +134,7 @@ if __name__ == "__main__":
          while True:
             # Analyser les images et attendre qu'on détecte un oeuf
             sleep(EMPTY_NEST_WAIT_TIME)
-            image = getPicture()
+            image = getPicture(currentState.espIpAddr)
             isBird, isEggs, number = birdDetection(image)
             if (isEggs and number > 0):
                currentState.state = States.Eggs
@@ -135,7 +145,7 @@ if __name__ == "__main__":
          while True:
             # Analyser les images et attendre qu'on détecte un oeuf
             sleep(EGGS_WAIT_TIME)
-            image = getPicture()
+            image = getPicture(currentState.espIpAddr)
             isBird, isEggs, number = birdDetection(image)
             if (isBird & number >1): # Quand un oisillon éclot (> 1 pour éviter de détecter la mère)
                currentState.state = States.Chicks
