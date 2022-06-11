@@ -92,7 +92,8 @@ def getPicture(ipAddr):
 # Détecte le nombre d'oiseaux présents sur l'image
 # Retourne un bool pour savoir si c'est des oiseaux, un bool pour si c'est des oeufs et le nombre d'oiseaux/oeuf
 def birdDetection(image): # image est le path vers l'image
-   pass
+   # A modifier avec les bons filtres
+   return False, False, 0
 
 # Envoyer le mail de notification
 def sendMail():
@@ -125,15 +126,58 @@ def sendMail():
    except smtplib.SMTPException:
       print ("Error: unable to send email")
 
+def deactivateHotspot():
+   subprocess.run("hotspot_deactivate.sh")
+
+def activateHotspot():
+   subprocess.run("hotspot_activate.sh")
+
+# Fonction pour la demo
+def demo(currentState: CurrentState):
+   if (currentState.state == States.Init):
+      foundIt = False
+      while not foundIt:
+         print("Trying to get esp...")
+         output = subprocess.check_output(["nmap", "-sn","-v","192.168.4.0/24"])
+         ipAddr = ""
+         lines = output.decode().splitlines()
+         for line in lines:
+            if "esp" in line:
+               res = line.split('(')[1]
+               ipAddr = res[:-1]
+               ipAddr = "http://"+ipAddr
+               currentState.espIpAddr = ipAddr
+               foundIt = True
+               break
+      input("Press a button to start")
+      print("Taking picture...")
+      getPicture(currentState.espIpAddr)
+      currentState.state = States.SendMail
+      saveToFile(currentState)
+      deactivateHotspot()
+   elif currentState.state == States.SendMail:
+      sendMail()
+      activateHotspot()
+      input("All done, waiting for input to close")
+      exit(0)
+      pass
+   # prendre photo et montrer qu'elle est visible
+   # Attendre appui sur enter
+   # redemarrer, envoyer mail, et remettre serveur
+   # Et attendre ou exit
+
 if __name__ == "__main__":
    # General variables
-   currentState = CurrentState(States.Init, 0)
+   currentState = CurrentState(States.Init, 0, 0)
    
 
    os.makedirs(PICTURE_FOLDER, exist_ok=True)
    if (os.path.exists(STATE_FILE_NAME)):
       currentState = readFromFile()
       print(currentState)
+
+   demo(currentState)
+   
    if currentState.state != States.Init:
       foundIt = False
       while not foundIt:
@@ -195,11 +239,11 @@ if __name__ == "__main__":
          saveToFile(currentState)
          currentState.state = States.SendMail
          saveToFile(currentState)
-         subprocess.run("hotspot_deactivate")
+         deactivateHotspot()
       elif currentState.state == States.SendMail:
          saveToFile(currentState)
          sendMail()
-         subprocess.run("hotspot_activate")
+         activateHotspot()
          currentState.state = States.WaitForEmpty
       elif currentState.state == States.WaitForEmpty:
          saveToFile(currentState)
