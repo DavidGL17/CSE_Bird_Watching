@@ -1,5 +1,5 @@
 :2015
 
-	root * /home/reds/cse/raspberry/caddy/site/
+	root * /home/reds/cse/raspberrypi/caddy/site/
 	file_server
 

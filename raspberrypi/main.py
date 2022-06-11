@@ -1,11 +1,11 @@
 # Main file with the state machine 
+from fileinput import filename
 import subprocess
 import datetime
 import enum
 import os
 from time import sleep
 import json
-from turtle import circle
 from selenium import webdriver
 from bs4 import BeautifulSoup
 import requests
@@ -76,7 +76,8 @@ def getPicture(ipAddr):
    file = open(os.path.join(PICTURE_FOLDER,realName), 'wb')
    response.raw.decode_content = True
    shutil.copyfileobj(response.raw, file)
-   fileName = datetime.datetime.now
+   x = datetime.datetime.now()
+   fileName = str(x)
    file = open(os.path.join(PICTURE_FOLDER,fileName), 'wb')
    shutil.copyfileobj(response.raw, file)
    del response

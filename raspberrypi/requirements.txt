@@ -4,3 +4,4 @@ beautifulsoup4
 Pillow
 html-parser
 pyvirtualdisplay
+opencv-python
