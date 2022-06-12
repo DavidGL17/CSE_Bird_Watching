@@ -136,10 +136,10 @@ def sendMail():
       print ("Error: unable to send email")
 
 def deactivateHotspot():
-   subprocess.run("./hotspot_deactivate.sh")
+   subprocess.run("sh", "hotspot_deactivate.sh")
 
 def activateHotspot():
-   subprocess.run("./hotspot_activate.sh")
+   subprocess.run("sh","hotspot_activate.sh")
 
 # Fonction pour la demo
 def demo(currentState: CurrentState):
