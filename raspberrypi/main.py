@@ -57,8 +57,8 @@ def getPicture(ipAddr): # Si image de taille 0 recommencer
    display = Display(visible=0, size=(800, 600))
    display.start()
    driver = webdriver.Chrome('/usr/lib/chromium-browser/chromedriver')   
+   driver.get(ipAddr)
    while True:
-      driver.get(ipAddr)
       # click on capture
       button_element = driver.find_element_by_id('capture')
       button_element.click()
@@ -81,11 +81,17 @@ def getPicture(ipAddr): # Si image de taille 0 recommencer
       shutil.copyfileobj(response.raw, file)
       file_size = os.path.getsize(os.path.join(PICTURE_FOLDER, realName))
       if file_size == 0:
+         print("problem with image trying again")
          continue
       x = datetime.datetime.now()
       fileName = str(x) + ".jpg"
       file = open(os.path.join(PICTURE_FOLDER,fileName), 'wb')
       shutil.copyfileobj(response.raw, file)
+      file_size = os.path.getsize(os.path.join(PICTURE_FOLDER, fileName))
+      if file_size == 0:
+         os.remove(os.path.join(PICTURE_FOLDER, fileName))
+         print("problem with image trying again")
+         continue
       del response
       driver.quit()
       display.stop()
