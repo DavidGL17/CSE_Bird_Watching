@@ -57,8 +57,8 @@ def getPicture(ipAddr): # Si image de taille 0 recommencer
    display = Display(visible=0, size=(800, 600))
    display.start()
    driver = webdriver.Chrome('/usr/lib/chromium-browser/chromedriver')   
+   driver.get(ipAddr)
    while True:
-      driver.get(ipAddr)
       # click on capture
       button_element = driver.find_element_by_id('capture')
       button_element.click()
