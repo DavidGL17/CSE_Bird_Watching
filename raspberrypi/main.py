@@ -54,7 +54,7 @@ def readFromFile():
    return state
 
 # Récupère l'image du esp
-def getPicture(ipAddr):
+def getPicture(ipAddr): # Si image de taille 0 recommencer
    display = Display(visible=0, size=(800, 600))
    display.start()
    driver = webdriver.Chrome('/usr/lib/chromium-browser/chromedriver')   
@@ -80,7 +80,7 @@ def getPicture(ipAddr):
    response.raw.decode_content = True
    shutil.copyfileobj(response.raw, file)
    x = datetime.datetime.now()
-   fileName = str(x)
+   fileName = str(x) + ".jpg"
    file = open(os.path.join(PICTURE_FOLDER,fileName), 'wb')
    shutil.copyfileobj(response.raw, file)
    del response
@@ -127,10 +127,10 @@ def sendMail():
       print ("Error: unable to send email")
 
 def deactivateHotspot():
-   subprocess.run("hotspot_deactivate.sh")
+   subprocess.run("./hotspot_deactivate.sh")
 
 def activateHotspot():
-   subprocess.run("hotspot_activate.sh")
+   subprocess.run("./hotspot_activate.sh")
 
 # Fonction pour la demo
 def demo(currentState: CurrentState):
@@ -159,7 +159,6 @@ def demo(currentState: CurrentState):
    elif currentState.state == States.SendMail:
       sendMail()
       activateHotspot()
-      input("All done, waiting for input to close")
       exit(0)
       pass
    # prendre photo et montrer qu'elle est visible
