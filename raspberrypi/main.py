@@ -13,7 +13,6 @@ import requests
 from pyvirtualdisplay import Display
 import shutil
 import smtplib
-import cv2
 
 PICTURE_FOLDER = "caddy/site"
 STATE_FILE_NAME = "state.json"
@@ -58,35 +57,39 @@ def getPicture(ipAddr): # Si image de taille 0 recommencer
    display = Display(visible=0, size=(800, 600))
    display.start()
    driver = webdriver.Chrome('/usr/lib/chromium-browser/chromedriver')   
-   driver.get(ipAddr)
-   # click on capture
-   button_element = driver.find_element_by_id('capture')
-   button_element.click()
-   # wait 4 sec
-   sleep(4)
-   # click refresh
-   button_element = driver.find_element_by_id('reload')
-   button_element.click()
-   sleep(2)
-   # récupérer la photo
-   response = requests.get(ipAddr)
-   soup = BeautifulSoup(response.text, "html.parser")
-   link = soup.findAll(id='photo')[0] 
-   imageSrc = link["src"]
-   response = requests.get(ipAddr+"/"+imageSrc, stream=True)
-   realName = "latest.jpg"
-   
-   file = open(os.path.join(PICTURE_FOLDER,realName), 'wb')
-   response.raw.decode_content = True
-   shutil.copyfileobj(response.raw, file)
-   x = datetime.datetime.now()
-   fileName = str(x) + ".jpg"
-   file = open(os.path.join(PICTURE_FOLDER,fileName), 'wb')
-   shutil.copyfileobj(response.raw, file)
-   del response
-   driver.quit()
-   display.stop()
-   return os.path.join(PICTURE_FOLDER, fileName)
+   while True:
+      driver.get(ipAddr)
+      # click on capture
+      button_element = driver.find_element_by_id('capture')
+      button_element.click()
+      # wait 4 sec
+      sleep(4)
+      # click refresh
+      button_element = driver.find_element_by_id('reload')
+      button_element.click()
+      sleep(2)
+      # récupérer la photo
+      response = requests.get(ipAddr)
+      soup = BeautifulSoup(response.text, "html.parser")
+      link = soup.findAll(id='photo')[0] 
+      imageSrc = link["src"]
+      response = requests.get(ipAddr+"/"+imageSrc, stream=True)
+      realName = "latest.jpg"
+      
+      file = open(os.path.join(PICTURE_FOLDER,realName), 'wb')
+      response.raw.decode_content = True
+      shutil.copyfileobj(response.raw, file)
+      file_size = os.path.getsize(os.path.join(PICTURE_FOLDER, realName))
+      if file_size == 0:
+         continue
+      x = datetime.datetime.now()
+      fileName = str(x) + ".jpg"
+      file = open(os.path.join(PICTURE_FOLDER,fileName), 'wb')
+      shutil.copyfileobj(response.raw, file)
+      del response
+      driver.quit()
+      display.stop()
+      return os.path.join(PICTURE_FOLDER, fileName)
 
 
 # Détecte le nombre d'oiseaux présents sur l'image

@@ -7,10 +7,7 @@ sudo apt-get upgrade
 sudo apt-get install -y dnsmasq hostapd git nmap python3-pip chromium-chromedriver xvfb caddy
 pip install -r requirements.txt
 echo "Setting auto startup of python program and caddy server"
-sudo echo "caddy stop" >> /etc/rc.local
-sudo echo "caddy run --config /home/reds/cse/raspberrypi/caddy/Caddyfile" >> /etc/rc.local
-sudo echo "python3 /home/reds/cse/raspberrypi/main.py" >> /etc/rc.local
-sudo chmod +x /etc/rc.d/rc.local
+sudo chmod +x *.sh
 echo "starting hotspot activation..."
 sudo systemctl stop dnsmasq
 sudo systemctl stop hostapd
@@ -24,3 +21,5 @@ sudo cp pi_config_files/hostapd_wifi /etc/default/hostapd
 sudo systemctl unmask hostapd
 sudo systemctl enable hostapd
 sudo systemctl start hostapd
+
+# Faire crontab -e et ajouter : "@reboot sh /home/reds/cse/raspberrypi/onRestart.sh"
