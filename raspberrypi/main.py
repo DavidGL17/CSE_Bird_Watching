@@ -63,11 +63,11 @@ def getPicture(ipAddr): # Si image de taille 0 recommencer
       button_element = driver.find_element_by_id('capture')
       button_element.click()
       # wait 4 sec
-      sleep(4)
+      sleep(5)
       # click refresh
       button_element = driver.find_element_by_id('reload')
       button_element.click()
-      sleep(2)
+      sleep(4)
       # récupérer la photo
       response = requests.get(ipAddr)
       soup = BeautifulSoup(response.text, "html.parser")

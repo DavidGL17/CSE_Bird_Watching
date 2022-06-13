@@ -3,7 +3,7 @@ sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https
 curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
 curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
 sudo apt-get update
-sudo apt-get upgrade
+sudo apt-get upgrade -y
 sudo apt-get install -y dnsmasq hostapd git nmap python3-pip chromium-chromedriver xvfb caddy
 pip install -r requirements.txt
 echo "Setting auto startup of python program and caddy server"
@@ -21,5 +21,7 @@ sudo cp pi_config_files/hostapd_wifi /etc/default/hostapd
 sudo systemctl unmask hostapd
 sudo systemctl enable hostapd
 sudo systemctl start hostapd
-
+cd caddy
+caddy stop
+caddy run&
 # Faire crontab -e et ajouter : "@reboot sh /home/reds/cse/raspberrypi/onRestart.sh"
