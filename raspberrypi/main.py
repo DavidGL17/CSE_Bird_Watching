@@ -150,6 +150,10 @@ def activateHotspot():
 
 # Fonction pour la demo
 def demo(currentState: CurrentState):
+   # prendre photo et montrer qu'elle est visible
+   # Attendre appui sur enter
+   # redemarrer, envoyer mail, et remettre serveur
+   # Et attendre ou exit
    if (currentState.state == States.Init):
       foundIt = False
       while not foundIt:
@@ -181,24 +185,16 @@ def demo(currentState: CurrentState):
          log.close()
       activateHotspot()
       exit(0)
-      pass
-   # prendre photo et montrer qu'elle est visible
-   # Attendre appui sur enter
-   # redemarrer, envoyer mail, et remettre serveur
-   # Et attendre ou exit
-
+   
 if __name__ == "__main__":
    # General variables
    currentState = CurrentState(States.Init, 0, 0)
    
-
    os.makedirs(PICTURE_FOLDER, exist_ok=True)
    if (os.path.exists(STATE_FILE_NAME)):
       currentState = readFromFile()
       print(currentState)
 
-   demo(currentState)
-   
    if currentState.state != States.Init:
       foundIt = False
       while not foundIt:
