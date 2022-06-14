@@ -1,6 +1,4 @@
 # Main file with the state machine 
-from fileinput import filename
-from re import sub
 import subprocess
 import datetime
 import enum
@@ -14,9 +12,17 @@ from pyvirtualdisplay import Display
 import shutil
 import smtplib
 
+# Email constants : modify as needed
+SENDER = 'cse.birds@outlook.com'
+SENDER_PASSWORD = "apassword" 
+SENDER_SMTP_HOST = 'smtp.office365.com'
+SENDER_SMTP_PORT = 587
+RECEIVERS = ['cse.birds@outlook.com']
+
+# General constants
 PICTURE_FOLDER = "caddy/site"
 STATE_FILE_NAME = "state.json"
-EMPTY_NEST_WAIT_TIME = 600 # seconds
+EMPTY_NEST_WAIT_TIME = 1800 # seconds
 EGGS_WAIT_TIME = 300 # seconds
 CHICKS_WAIT_TIME = 120 # seconds
 WAIT_FOR_EMPTY_WAIT_TIME = 1800 # seconds
@@ -113,30 +119,24 @@ def birdDetection(image): # image est le path vers l'image
 
 # Envoyer le mail de notification
 def sendMail():
-   sender = 'cse.birds@outlook.com'
-   receivers = ['cse.birds@outlook.com']
-
    #smtp
-   smtpHost = 'smtp.office365.com'
-   smtpPort = 587
-   password = "framboise$1234" 
    subject = "Notification de surveillance du Nid"
 
    # Add the From: and To: headers at the start!
    message = ("From: %s\r\nTo: %s\r\nSubject: %s\r\n\r\n"
-         % (sender, ", ".join(receivers), subject))
+         % (SENDER, ", ".join(RECEIVERS), subject))
    message += """Bonjour\r\nVotre premier oiseau est sorti du nid."""
 
    print (message)
 
    try:
-      smtpObj = smtplib.SMTP(smtpHost, smtpPort)
+      smtpObj = smtplib.SMTP(SENDER_SMTP_HOST, SENDER_SMTP_PORT)
       #smtpObj.set_debuglevel(1)
       smtpObj.ehlo()
       smtpObj.starttls()
       smtpObj.ehlo()    
-      smtpObj.login(sender,password)
-      smtpObj.sendmail(sender, receivers, message)
+      smtpObj.login(SENDER,SENDER_PASSWORD)
+      smtpObj.sendmail(SENDER, RECEIVERS, message)
       smtpObj.quit()
       print ("Successfully sent email")
    except smtplib.SMTPException:
